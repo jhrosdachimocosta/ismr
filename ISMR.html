@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISMR | Stochastic Generator</title>
+    <style>
+        :root {
+            --bg-color: #0f0f13;
+            --panel-bg: #1c1c24;
+            --text-color: #e0e0e0;
+            --accent: #00ffcc;
+            --accent-hover: #00ccaa;
+            --danger: #ff4d4d;
+            --secondary: #444;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background-color: var(--panel-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 500px;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            margin: 0 0 25px 0;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--accent);
+        }
+        .control-group { margin-bottom: 18px; }
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.85rem;
+            color: #aaa;
+        }
+        .volume-section {
+            border-top: 1px solid #333;
+            margin-top: 25px;
+            padding-top: 20px;
+        }
+        input[type=range] {
+            width: 100%;
+            accent-color: var(--accent);
+            background: #333;
+            height: 6px;
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+        }
+        .buttons { display: flex; margin-bottom: 25px; }
+        button {
+            background-color: var(--secondary);
+            color: var(--text-color);
+            border: 1px solid #555;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        button:hover { border-color: var(--accent); }
+        #playBtn {
+            background-color: var(--accent);
+            color: #000;
+            font-size: 1.1rem;
+            width: 100%;
+            padding: 15px;
+        }
+        .preset-manager {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 8px;
+            margin-bottom: 10px;
+            background: #14141a;
+            padding: 12px;
+            border-radius: 8px;
+        }
+        .io-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 25px;
+        }
+        select {
+            background-color: #222;
+            color: var(--text-color);
+            border: 1px solid #444;
+            border-radius: 6px;
+            padding: 8px;
+        }
+        #saveBtn { background-color: #2b4c3f; color: #a3e6cd; }
+        #deleteBtn { background-color: #4a2525; color: #ffb3b3; }
+        .io-btn { font-size: 0.75rem; background: #222; border-color: #333; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>ISMR</h1>
+    
+    <div class="buttons">
+        <button id="playBtn">START SYNTHESIS</button>
+    </div>
+
+    <div class="preset-manager">
+        <select id="presetSelect"></select>
+        <button id="saveBtn">Save</button>
+        <button id="deleteBtn">Del</button>
+    </div>
+    <div class="io-buttons">
+        <button class="io-btn" id="exportBtn">Export to Clipboard</button>
+        <button class="io-btn" id="importBtn">Import from String</button>
+    </div>
+
+    <div class="control-group">
+        <div class="control-header"><span>Density (Events/sec)</span><span id="densityVal">15</span></div>
+        <input type="range" id="density" min="1" max="100" value="15" step="1">
+    </div>
+
+    <div class="control-group">
+        <div class="control-header"><span>Chaos (Variance)</span><span id="varianceVal">0.50</span></div>
+        <input type="range" id="variance" min="0" max="1" value="0.5" step="0.05">
+    </div>
+
+    <div class="control-group">
+        <div class="control-header"><span>Frequency (Hz)</span><span id="pitchVal">1000</span></div>
+        <input type="range" id="pitch" min="200" max="8000" value="1000" step="50">
+    </div>
+
+    <div class="control-group">
+        <div class="control-header"><span>Sharpness (Res)</span><span id="sharpnessVal">10</span></div>
+        <input type="range" id="sharpness" min="1" max="30" value="10" step="1">
+    </div>
+
+    <div class="volume-section">
+        <div class="control-group">
+            <div class="control-header"><span>Noise Bed (Brown)</span><span id="noiseLevelVal">0.200</span></div>
+            <input type="range" id="noiseLevel" min="0" max="0.5" value="0.2" step="0.005">
+        </div>
+        <div class="control-group">
+            <div class="control-header"><span>Trigger Volume</span><span id="triggerVolVal">0.80</span></div>
+            <input type="range" id="triggerVol" min="0" max="3" value="0.8" step="0.05">
+        </div>
+        <div class="control-group">
+            <div class="control-header"><span style="color:var(--accent)">Master Volume</span><span id="masterVolVal" style="color:var(--accent)">0.80</span></div>
+            <input type="range" id="masterVol" min="0" max="3" value="0.8" step="0.05">
+        </div>
+    </div>
+</div>
+
+<script>
+    let audioCtx, isPlaying = false, nextEventTime = 0, timerID;
+    let masterGain, brownNoiseNode, brownNoiseGain, triggerGain;
+
+    const playBtn = document.getElementById('playBtn');
+    const presetSelect = document.getElementById('presetSelect');
+    const sliders = {
+        density: document.getElementById('density'),
+        variance: document.getElementById('variance'),
+        pitch: document.getElementById('pitch'),
+        sharpness: document.getElementById('sharpness'),
+        noiseLevel: document.getElementById('noiseLevel'),
+        triggerVol: document.getElementById('triggerVol'),
+        masterVol: document.getElementById('masterVol')
+    };
+
+    const defaultPresets = {
+        "Glass Rain": { density: 10, variance: 0.8, pitch: 1200, sharpness: 15, noiseLevel: 0.1, triggerVol: 1.2, masterVol: 1.0 },
+        "Organic Static": { density: 40, variance: 0.5, pitch: 400, sharpness: 5, noiseLevel: 0.2, triggerVol: 0.8, masterVol: 1.0 }
+    };
+
+    let savedPresets = JSON.parse(localStorage.getItem('ismr_presets')) || defaultPresets;
+
+    function updateDropdown(selectName = null) {
+        presetSelect.innerHTML = '';
+        Object.keys(savedPresets).forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name; opt.textContent = name;
+            presetSelect.appendChild(opt);
+        });
+        if (selectName) presetSelect.value = selectName;
+        loadPreset(presetSelect.value);
+    }
+
+    function loadPreset(name) {
+        if (!savedPresets[name]) return;
+        const p = savedPresets[name];
+        Object.keys(p).forEach(k => { if(sliders[k]) sliders[k].value = p[k]; });
+        Object.values(sliders).forEach(s => s.dispatchEvent(new Event('input')));
+    }
+
+    Object.keys(sliders).forEach(key => {
+        sliders[key].addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            document.getElementById(key + 'Val').innerText = (key === 'noiseLevel') ? val.toFixed(3) : val.toFixed(2);
+            if (audioCtx && audioCtx.state === 'running') {
+                if (key === 'noiseLevel') brownNoiseGain.gain.setTargetAtTime(val, audioCtx.currentTime, 0.05);
+                if (key === 'triggerVol') triggerGain.gain.setTargetAtTime(val, audioCtx.currentTime, 0.05);
+                if (key === 'masterVol') masterGain.gain.setTargetAtTime(val, audioCtx.currentTime, 0.05);
+            }
+        });
+    });
+
+    function initAudio() {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = parseFloat(sliders.masterVol.value);
+        masterGain.connect(audioCtx.destination);
+        triggerGain = audioCtx.createGain();
+        triggerGain.gain.value = parseFloat(sliders.triggerVol.value);
+        triggerGain.connect(masterGain);
+
+        const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        let lastOut = 0;
+        for (let i = 0; i < data.length; i++) {
+            let white = Math.random() * 2 - 1;
+            data[i] = (lastOut + (0.02 * white)) / 1.02;
+            lastOut = data[i];
+            data[i] *= 3.5;
+        }
+        brownNoiseNode = audioCtx.createBufferSource();
+        brownNoiseNode.buffer = buffer;
+        brownNoiseNode.loop = true;
+        brownNoiseGain = audioCtx.createGain();
+        brownNoiseGain.gain.value = parseFloat(sliders.noiseLevel.value);
+        brownNoiseNode.connect(brownNoiseGain);
+        brownNoiseGain.connect(masterGain);
+        brownNoiseNode.start();
+    }
+
+    function playTrigger(time) {
+        const source = audioCtx.createBufferSource();
+        const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.05, audioCtx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+        source.buffer = buf;
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = parseFloat(sliders.pitch.value);
+        filter.Q.value = parseFloat(sliders.sharpness.value);
+        const env = audioCtx.createGain();
+        env.gain.setValueAtTime(0, time);
+        env.gain.linearRampToValueAtTime(1, time + 0.001);
+        env.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+        source.connect(filter); filter.connect(env); env.connect(triggerGain);
+        source.start(time); source.stop(time + 0.05);
+    }
+
+    function schedule() {
+        if (!isPlaying) return;
+        while (nextEventTime < audioCtx.currentTime + 0.1) {
+            playTrigger(nextEventTime);
+            const interval = 1 / parseFloat(sliders.density.value);
+            const varAmt = interval * parseFloat(sliders.variance.value);
+            nextEventTime += Math.max(0.005, interval + (Math.random() * 2 - 1) * varAmt);
+        }
+        timerID = setTimeout(schedule, 25);
+    }
+
+    playBtn.onclick = () => {
+        if (!audioCtx) initAudio();
+        isPlaying = !isPlaying;
+        if (isPlaying) {
+            audioCtx.resume();
+            playBtn.innerText = 'STOP SYNTHESIS';
+            playBtn.style.backgroundColor = 'var(--danger)';
+            nextEventTime = audioCtx.currentTime + 0.05;
+            schedule();
+        } else {
+            audioCtx.suspend();
+            playBtn.innerText = 'START SYNTHESIS';
+            playBtn.style.backgroundColor = 'var(--accent)';
+            clearTimeout(timerID);
+        }
+    };
+
+    document.getElementById('saveBtn').onclick = () => {
+        const name = prompt("Preset Name:");
+        if (!name) return;
+        savedPresets[name] = Object.fromEntries(Object.keys(sliders).map(k => [k, parseFloat(sliders[k].value)]));
+        localStorage.setItem('ismr_presets', JSON.stringify(savedPresets));
+        updateDropdown(name);
+    };
+
+    document.getElementById('deleteBtn').onclick = () => {
+        if (Object.keys(savedPresets).length > 1 && confirm("Delete?")) {
+            delete savedPresets[presetSelect.value];
+            localStorage.setItem('ismr_presets', JSON.stringify(savedPresets));
+            updateDropdown();
+        }
+    };
+
+    document.getElementById('exportBtn').onclick = () => {
+        const str = btoa(JSON.stringify(savedPresets));
+        navigator.clipboard.writeText(str).then(() => alert("Presets copied to clipboard!"));
+    };
+
+    document.getElementById('importBtn').onclick = () => {
+        const str = prompt("Paste export string:");
+        if (str) {
+            try {
+                savedPresets = JSON.parse(atob(str));
+                localStorage.setItem('ismr_presets', JSON.stringify(savedPresets));
+                updateDropdown();
+            } catch(e) { alert("Invalid string"); }
+        }
+    };
+
+    presetSelect.onchange = (e) => loadPreset(e.target.value);
+    updateDropdown();
+</script>
+</body>
+</html>
